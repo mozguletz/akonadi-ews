@@ -108,6 +108,7 @@ const EwsServerVersion& EwsServerVersion::minSupporting(ServerFeature feature)
     switch (feature) {
     case StreamingSubscription:
     case FreeBusyChangedEvent:
+    case PasswordExpiration:
         return ewsVersion2010Sp1;
     default:
         return ewsNullVersion;

@@ -1,0 +1,8 @@
+[Global]
+IconName=akonadi-ews
+Comment=Akonadi Resource for Microsoft Exchange Web Services (EWS)
+
+[Event/password-expiring]
+Name=Password is expiring
+Comment=Password is expiring in less than a week
+Action=Popup

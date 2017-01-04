@@ -51,6 +51,7 @@
 #include "ewscreateitemjob.h"
 #include "configdialog.h"
 #include "settings.h"
+#include "ewsnotification.h"
 #ifdef HAVE_SEPARATE_MTA_RESOURCE
 #include "ewscreateitemrequest.h"
 #endif
@@ -60,6 +61,7 @@
 #include "tags/ewsglobaltagsreadjob.h"
 #include "ewsclient_debug.h"
 
+#include "ewsgetpasswordexpirationdaterequest.h"
 #include "resourceadaptor.h"
 
 using namespace Akonadi;
@@ -1274,6 +1276,7 @@ void EwsResource::doSetOnline(bool online)
 {
     if (online) {
         resetUrl();
+        checkPasswordExpiration();
     } else {
         mSubManager.reset(Q_NULLPTR);
     }
@@ -1426,6 +1429,48 @@ void EwsResource::globalTagsRetrievalFinished(KJob *job)
         EwsGlobalTagsReadJob *readJob = qobject_cast<EwsGlobalTagsReadJob*>(job);
         Q_ASSERT(readJob);
         tagsRetrieved(readJob->tags(), QHash<QString, Item::List>());
+    }
+}
+
+
+void EwsResource::checkPasswordExpiration()
+{
+    EwsGetPasswordExpirationDateRequest *job = new EwsGetPasswordExpirationDateRequest(Settings::email(), mEwsClient, this);
+    connect(job, SIGNAL(result(KJob*)), SLOT(getPasswordExpirationRequestFinished(KJob*)));
+    job->start();
+}
+
+
+void EwsResource::getPasswordExpirationRequestFinished(KJob *job)
+{
+    if (job->error()) {
+        cancelTask(job->errorString());
+    } else {
+        EwsGetPasswordExpirationDateRequest *req = qobject_cast<EwsGetPasswordExpirationDateRequest*>(job);
+        if (!req) {
+            cancelTask(QStringLiteral("Invalid EwsGetPasswordExpirationDateRequest job object"));
+            return;
+        }
+        qint64 daysUntilPasswordExpires = QDateTime::currentDateTime().daysTo(req->getPasswordExpirationDate());
+        qCInfoNC(EWSRES_LOG)<< QStringLiteral("Password Expiration Date is set to %1, expiring in %2 days")
+                               .arg(req->getPasswordExpirationDate().toString(Qt::DefaultLocaleShortDate))
+                               .arg(daysUntilPasswordExpires);
+
+        if(daysUntilPasswordExpires > 1 && daysUntilPasswordExpires <= 7){
+            const QString passwdExpireInDays = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire in <b>%2</b> days",
+                                                    Settings::email(),
+                                                    daysUntilPasswordExpires);
+            sendPasswordExpiringNotification(passwdExpireInDays);
+        } else if (daysUntilPasswordExpires == 1) {
+            const QString passwdExpireInOneDay = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire in <b>one</b> day",
+                                                      Settings::email());
+            sendPasswordExpiringNotification(passwdExpireInOneDay);
+        } else if(daysUntilPasswordExpires == 0) {
+            const QString passwdExpiresTodayAt = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire <b>today</b> at %2 UTC",
+                                                      Settings::email(),
+                                                      req->getPasswordExpirationDate().time().toString(Qt::DefaultLocaleShortDate));
+            sendPasswordExpiringNotification(passwdExpiresTodayAt);
+        }
     }
 }
 

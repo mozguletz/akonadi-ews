@@ -55,7 +55,8 @@ set(EWSCLIENT_SRCS
   ewsupdatefolderrequest.cpp
   ewsupdateitemrequest.cpp
   ewsxml.cpp
-  ewsclient_debug.cpp)
+  ewsclient_debug.cpp
+  ewsgetpasswordexpirationdaterequest.cpp)
 
 add_library(ewsclient STATIC ${EWSCLIENT_SRCS})
 target_link_libraries(ewsclient 

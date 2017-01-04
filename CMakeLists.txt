@@ -44,6 +44,8 @@ find_package(KF5Codecs)
 find_package(KF5KDELibs4Support)
 find_package(KF5Wallet)
 find_package(KF5WidgetsAddons)
+find_package(KF5Notifications)
+
 
 option(HAVE_SEPARATE_MTA_RESOURCE "Build a separate resource for sending e-mail." TRUE)
 option(HAVE_INBOX_FILTERING_WORKAROUND "Include inbox filtering workaround." TRUE)
@@ -125,6 +127,7 @@ target_link_libraries(akonadi_ews_resource
     KF5::KDELibs4Support
     KF5::Wallet
     KF5::WidgetsAddons
+    KF5::Notifications
     ewsclient)
 
 if (HAVE_SEPARATE_MTA_RESOURCE)
@@ -165,6 +168,9 @@ endif (ENABLE_TESTS)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ewsresource.desktop
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/akonadi/agents" )
 install(TARGETS akonadi_ews_resource ${INSTALL_TARGETS_DEFAULT_ARGS})
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/akonadi_ews_resource.notifyrc
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/knotifications5" )
 
 if (HAVE_SEPARATE_MTA_RESOURCE)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ewsmtaresource.desktop

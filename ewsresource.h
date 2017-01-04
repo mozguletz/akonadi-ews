@@ -131,6 +131,7 @@ private Q_SLOTS:
     void globalTagChangeFinished(KJob *job);
     void globalTagsRetrievalFinished(KJob *job);
     void adjustInboxRemoteIdFetchFinished(KJob *job);
+    void getPasswordExpirationRequestFinished(KJob *job);
     void rootCollectionFetched(KJob *job);
     void connectionError();
 public Q_SLOTS:
@@ -149,8 +150,8 @@ private:
 
     void saveState();
     void resetUrl();
-
     void doRetrieveCollections();
+	void checkPasswordExpiration();
 
     int reconnectTimeout();
 
