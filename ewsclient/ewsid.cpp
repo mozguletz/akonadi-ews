@@ -1,5 +1,5 @@
 /*  This file is part of Akonadi EWS Resource
-    Copyright (C) 2015-2016 Krzysztof Nowicki <krissn@op.pl>
+    Copyright (C) 2015-2017 Krzysztof Nowicki <krissn@op.pl>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -54,6 +54,15 @@ static const QString distinguishedIdNames[] = {
     QStringLiteral("archiverecoverableitemsversions"),
     QStringLiteral("archiverecoverableitemspurges")
 };
+
+class EwsIdComparatorRegistrar
+{
+public:
+    EwsIdComparatorRegistrar() {
+        QMetaType::registerComparators<EwsId>();
+    };
+};
+const EwsIdComparatorRegistrar ewsIdComparatorRegistrar;
 
 /*
  * Current Akonadi mail filter agent determines which folders to filter for incoming mail by
@@ -139,6 +148,20 @@ bool EwsId::operator==(const EwsId &other) const
     return true;
 }
 
+bool EwsId::operator<(const EwsId &other) const
+{
+    if (mType != other.mType)
+        return mType < other.mType;
+
+    if (mType == Distinguished) {
+        return (mDid < other.mDid);
+    }
+    else if (mType == Real) {
+        return (mId < other.mId && mChangeKey < other.mChangeKey);
+    }
+    return false;
+}
+
 void EwsId::writeFolderIds(QXmlStreamWriter &writer) const
 {
     if (mType == Distinguished) {
@@ -188,6 +211,24 @@ void EwsId::writeItemIds(QXmlStreamWriter &writer) const
             writer.writeAttribute(QStringLiteral("ChangeKey"), mChangeKey);
         }
         writer.writeEndElement();
+    }
+}
+
+void EwsId::writeAttributes(QXmlStreamWriter &writer) const
+{
+    if (mType == Real) {
+#ifdef HAVE_INBOX_FILTERING_WORKAROUND
+        if (mId == QStringLiteral("INBOX")) {
+            writer.writeAttribute(QStringLiteral("Id"), inboxId);
+        } else {
+            writer.writeAttribute(QStringLiteral("Id"), mId);
+        }
+#else
+        writer.writeAttribute(QStringLiteral("Id"), mId);
+#endif
+        if (!mChangeKey.isEmpty()) {
+            writer.writeAttribute(QStringLiteral("ChangeKey"), mChangeKey);
+        }
     }
 }
 

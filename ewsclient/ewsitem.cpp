@@ -1,5 +1,5 @@
 /*  This file is part of Akonadi EWS Resource
-    Copyright (C) 2015-2016 Krzysztof Nowicki <krissn@op.pl>
+    Copyright (C) 2015-2017 Krzysztof Nowicki <krissn@op.pl>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -23,6 +23,7 @@
 #include <QtCore/QXmlStreamWriter>
 #include <KCodecs/KCodecs>
 
+#include "ewsattachment.h"
 #include "ewsitembase_p.h"
 #include "ewsmailbox.h"
 #include "ewsattendee.h"
@@ -57,6 +58,9 @@ public:
     static bool recurrenceReader(QXmlStreamReader &reader, QVariant &val);
     static bool categoriesReader(QXmlStreamReader &reader, QVariant &val);
     static bool categoriesWriter(QXmlStreamWriter &writer, const QVariant &val);
+    static bool attachmentsReader(QXmlStreamReader &reader, QVariant &val);
+
+    bool operator==(const EwsItemPrivate &other) const;
 
     EwsItemType mType;
     static const Reader mStaticEwsXml;
@@ -66,12 +70,13 @@ public:
 static const QVector<EwsItemPrivate::Reader::Item> ewsItemItems = {
     // Item fields
     {EwsItemFieldMimeContent, QStringLiteral("MimeContent"), &ewsXmlBase64Reader, &ewsXmlBase64Writer},
-    {EwsItemFieldItemId, QStringLiteral("ItemId"), &ewsXmlIdReader},
+    {EwsItemFieldItemId, QStringLiteral("ItemId"), &ewsXmlIdReader, &ewsXmlIdWriter},
     {EwsItemFieldParentFolderId, QStringLiteral("ParentFolderId"), &ewsXmlIdReader, &ewsXmlIdWriter},
     {EwsItemFieldItemClass, QStringLiteral("ItemClass"), &ewsXmlTextReader, &ewsXmlTextWriter},
     {EwsItemFieldSubject, QStringLiteral("Subject"), &ewsXmlTextReader, &ewsXmlTextWriter},
     {EwsItemFieldSensitivity, QStringLiteral("Sensitivity"), &ewsXmlSensitivityReader},
     {EwsItemFieldBody, QStringLiteral("Body"), &EwsItemPrivate::bodyReader},
+    {EwsItemFieldAttachments, QStringLiteral("Attachments"), &EwsItemPrivate::attachmentsReader},
     {EwsItemFieldDateTimeReceived, QStringLiteral("DateTimeReceived"), &ewsXmlDateTimeReader},
     {EwsItemFieldSize, QStringLiteral("Size"), &ewsXmlUIntReader},
     {EwsItemFieldCategories, QStringLiteral("Categories"), &EwsItemPrivate::categoriesReader,
@@ -125,6 +130,7 @@ static const QVector<EwsItemPrivate::Reader::Item> ewsItemItems = {
     {EwsItemFieldDeletedOccurrences, QStringLiteral("DeletedOccurrences"),
         &EwsItemPrivate::occurrencesReader},
     {EwsItemFieldTimeZone, QStringLiteral("TimeZone"), &ewsXmlTextReader},
+    {EwsItemFieldExchangePersonIdGuid, QStringLiteral("ExchangePersonIdGuid"), &ewsXmlTextReader},
 };
 
 const EwsItemPrivate::Reader EwsItemPrivate::mStaticEwsXml(ewsItemItems);
@@ -365,6 +371,36 @@ bool EwsItemPrivate::recurrenceReader(QXmlStreamReader &reader, QVariant &val)
     return true;
 }
 
+bool EwsItemPrivate::attachmentsReader(QXmlStreamReader &reader, QVariant &val)
+{
+    EwsAttachment::List attList;
+
+    while (reader.readNextStartElement()) {
+        if (reader.namespaceUri() != ewsTypeNsUri) {
+            qCWarningNC(EWSRES_LOG) << QStringLiteral("Unexpected namespace in %1 element:").arg(reader.name().toString())
+                            << reader.namespaceUri();
+            return false;
+        }
+        EwsAttachment att(reader);
+        if (!att.isValid()) {
+            return false;
+        }
+        attList.append(att);
+    }
+
+    val = QVariant::fromValue<EwsAttachment::List>(attList);
+
+    return true;
+}
+
+bool EwsItemPrivate::operator==(const EwsItemPrivate &other) const
+{
+    if (!EwsItemBasePrivate::operator==(other)) {
+        return false;
+    }
+    return mType == other.mType;
+}
+
 EwsItem::EwsItem()
     : EwsItemBase(QSharedDataPointer<EwsItemBasePrivate>(new EwsItemPrivate()))
 {
@@ -387,6 +423,14 @@ EwsItem::EwsItem(QXmlStreamReader &reader)
     // Check what item type are we
     if (reader.name() == QStringLiteral("Item")) {
         d->mType = EwsItemTypeItem;
+        QStringRef subtype = reader.attributes().value(QStringLiteral("xsi:type"));
+        if (!subtype.isEmpty()) {
+            auto tokens = subtype.split(':');
+            QStringRef type = tokens.size() == 1 ? tokens[0] : tokens[1];
+            if (type == QStringLiteral("AbchPersonItemType")) {
+                d->mType = EwsItemTypeAbchPerson;
+            }
+        }
     }
     else if (reader.name() == QStringLiteral("Message")) {
         d->mType = EwsItemTypeMessage;
@@ -468,6 +512,7 @@ void EwsItem::setType(EwsItemType type)
 {
     D_PTR
     d->mType = type;
+    d->mValid = true;
 }
 
 EwsItemType EwsItem::internalType() const
@@ -523,4 +568,9 @@ bool EwsItem::write(QXmlStreamWriter &writer) const
     writer.writeEndElement();
 
     return status;
+}
+
+bool EwsItem::operator==(const EwsItem &other) const
+{
+    return *d == *other.d;
 }

@@ -17,40 +17,21 @@
     Boston, MA 02110-1301, USA.
 */
 
-#ifndef EWSGETSTREAMINGEVENTSREQUEST_H
-#define EWSGETSTREAMINGEVENTSREQUEST_H
+#ifndef EWSCREATEABCHPERSONJOB_H
+#define EWSCREATEABCHPERSONJOB_H
 
-#include <QtCore/QList>
-#include <QtCore/QSharedPointer>
-#include <QtCore/QTimer>
+#include "ewscreateitemjob.h"
 
-#include "ewsid.h"
-#include "ewseventrequestbase.h"
-#include "ewstypes.h"
-
-class QXmlStreamReader;
-class QXmlStreamWriter;
-
-class EwsGetStreamingEventsRequest : public EwsEventRequestBase
+class EwsCreateAbchPersonJob : public EwsCreateItemJob
 {
     Q_OBJECT
 public:
-    EwsGetStreamingEventsRequest(EwsClient &client, QObject *parent);
-    virtual ~EwsGetStreamingEventsRequest();
-
-    void setTimeout(uint timeout) { mTimeout = timeout; };
-
-    virtual void start() Q_DECL_OVERRIDE;
-public Q_SLOTS:
-    void eventsProcessed(const Response &response);
-Q_SIGNALS:
-    void eventsReceived(KJob *job);
-protected Q_SLOTS:
-    void requestData(KIO::Job *job, const QByteArray &data);
-    void requestDataTimeout();
+    EwsCreateAbchPersonJob(EwsClient& client, const Akonadi::Item &item,
+                     const Akonadi::Collection &collection, EwsTagStore *tagStore, EwsResource *parent);
+    virtual ~EwsCreateAbchPersonJob();
+    virtual bool setSend(bool send = true) Q_DECL_OVERRIDE;
 protected:
-    uint mTimeout;
-    QTimer mRespTimer;
+    virtual void doStart() Q_DECL_OVERRIDE;
 };
 
 #endif

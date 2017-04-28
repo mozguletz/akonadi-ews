@@ -17,46 +17,19 @@
     Boston, MA 02110-1301, USA.
 */
 
-#ifndef EWSGETITEMREQUEST_H
-#define EWSGETITEMREQUEST_H
+#ifndef EWSMODIFYABCHPERSONJOB_H
+#define EWSMODIFYABCHPERSONJOB_H
 
-#include <QtCore/QList>
+#include "ewsmodifyitemjob.h"
 
-#include "ewsitem.h"
-#include "ewsrequest.h"
-#include "ewstypes.h"
-#include "ewsitemshape.h"
-
-class EwsGetItemRequest : public EwsRequest
+class EwsModifyAbchPersonJob : public EwsModifyItemJob
 {
     Q_OBJECT
 public:
-    class Response : public EwsRequest::Response
-    {
-    public:
-        Response(QXmlStreamReader &reader);
-        bool parseItems(QXmlStreamReader &reader);
-        const EwsItem &item() const { return mItem; };
-    private:
-        EwsItem mItem;
-    };
-
-    EwsGetItemRequest(EwsClient &client, QObject *parent);
-    virtual ~EwsGetItemRequest();
-
-    void setItemIds(const EwsId::List &ids);
-    void setItemShape(const EwsItemShape &shape);
-
+    EwsModifyAbchPersonJob(EwsClient& client, const Akonadi::Item::List &items, const QSet<QByteArray> &parts,
+                     QObject *parent);
+    virtual ~EwsModifyAbchPersonJob();
     virtual void start() Q_DECL_OVERRIDE;
-
-    const QList<Response> &responses() const { return mResponses; };
-protected:
-    virtual bool parseResult(QXmlStreamReader &reader) Q_DECL_OVERRIDE;
-    bool parseItemsResponse(QXmlStreamReader &reader);
-private:
-    EwsId::List mIds;
-    EwsItemShape mShape;
-    QList<Response> mResponses;
 };
 
 #endif

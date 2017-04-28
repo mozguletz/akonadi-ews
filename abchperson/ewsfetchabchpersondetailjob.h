@@ -17,40 +17,19 @@
     Boston, MA 02110-1301, USA.
 */
 
-#ifndef EWSGETSTREAMINGEVENTSREQUEST_H
-#define EWSGETSTREAMINGEVENTSREQUEST_H
+#ifndef EWSFETCHABCHPERSONDETAILJOB_H
+#define EWSFETCHABCHPERSONDETAILJOB_H
 
-#include <QtCore/QList>
-#include <QtCore/QSharedPointer>
-#include <QtCore/QTimer>
+#include "ewsfetchitemdetailjob.h"
 
-#include "ewsid.h"
-#include "ewseventrequestbase.h"
-#include "ewstypes.h"
-
-class QXmlStreamReader;
-class QXmlStreamWriter;
-
-class EwsGetStreamingEventsRequest : public EwsEventRequestBase
+class EwsFetchAbchContactDetailsJob : public EwsFetchItemDetailJob
 {
     Q_OBJECT
 public:
-    EwsGetStreamingEventsRequest(EwsClient &client, QObject *parent);
-    virtual ~EwsGetStreamingEventsRequest();
-
-    void setTimeout(uint timeout) { mTimeout = timeout; };
-
-    virtual void start() Q_DECL_OVERRIDE;
-public Q_SLOTS:
-    void eventsProcessed(const Response &response);
-Q_SIGNALS:
-    void eventsReceived(KJob *job);
-protected Q_SLOTS:
-    void requestData(KIO::Job *job, const QByteArray &data);
-    void requestDataTimeout();
+    EwsFetchAbchContactDetailsJob(EwsClient &client, QObject *parent, const Akonadi::Collection &collection);
+    virtual ~EwsFetchAbchContactDetailsJob();
 protected:
-    uint mTimeout;
-    QTimer mRespTimer;
+    virtual void processItems(const QList<EwsGetItemRequest::Response> &responses) Q_DECL_OVERRIDE;
 };
 
 #endif

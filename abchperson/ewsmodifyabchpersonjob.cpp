@@ -17,40 +17,21 @@
     Boston, MA 02110-1301, USA.
 */
 
-#ifndef EWSGETSTREAMINGEVENTSREQUEST_H
-#define EWSGETSTREAMINGEVENTSREQUEST_H
+#include "ewsmodifyabchpersonjob.h"
 
-#include <QtCore/QList>
-#include <QtCore/QSharedPointer>
-#include <QtCore/QTimer>
+#include "ewsclient_debug.h"
 
-#include "ewsid.h"
-#include "ewseventrequestbase.h"
-#include "ewstypes.h"
-
-class QXmlStreamReader;
-class QXmlStreamWriter;
-
-class EwsGetStreamingEventsRequest : public EwsEventRequestBase
+EwsModifyAbchPersonJob::EwsModifyAbchPersonJob(EwsClient& client, const Akonadi::Item::List &items,
+                                   const QSet<QByteArray> &parts, QObject *parent)
+    : EwsModifyItemJob(client, items, parts, parent)
 {
-    Q_OBJECT
-public:
-    EwsGetStreamingEventsRequest(EwsClient &client, QObject *parent);
-    virtual ~EwsGetStreamingEventsRequest();
+}
+EwsModifyAbchPersonJob::~EwsModifyAbchPersonJob()
+{
+}
 
-    void setTimeout(uint timeout) { mTimeout = timeout; };
-
-    virtual void start() Q_DECL_OVERRIDE;
-public Q_SLOTS:
-    void eventsProcessed(const Response &response);
-Q_SIGNALS:
-    void eventsReceived(KJob *job);
-protected Q_SLOTS:
-    void requestData(KIO::Job *job, const QByteArray &data);
-    void requestDataTimeout();
-protected:
-    uint mTimeout;
-    QTimer mRespTimer;
-};
-
-#endif
+void EwsModifyAbchPersonJob::start()
+{
+    qCWarning(EWSRES_LOG) << QStringLiteral("Abch person item modification not implemented!");
+    emitResult();
+}

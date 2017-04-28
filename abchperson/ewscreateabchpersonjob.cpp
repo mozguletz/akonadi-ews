@@ -17,40 +17,30 @@
     Boston, MA 02110-1301, USA.
 */
 
-#ifndef EWSGETSTREAMINGEVENTSREQUEST_H
-#define EWSGETSTREAMINGEVENTSREQUEST_H
+#include "ewscreateabchpersonjob.h"
 
-#include <QtCore/QList>
-#include <QtCore/QSharedPointer>
-#include <QtCore/QTimer>
+#include "ewsclient_debug.h"
 
-#include "ewsid.h"
-#include "ewseventrequestbase.h"
-#include "ewstypes.h"
-
-class QXmlStreamReader;
-class QXmlStreamWriter;
-
-class EwsGetStreamingEventsRequest : public EwsEventRequestBase
+EwsCreateAbchPersonJob::EwsCreateAbchPersonJob(EwsClient& client, const Akonadi::Item &item,
+                                   const Akonadi::Collection &collection, EwsTagStore *tagStore,
+                                   EwsResource *parent)
+    : EwsCreateItemJob(client, item, collection, tagStore, parent)
 {
-    Q_OBJECT
-public:
-    EwsGetStreamingEventsRequest(EwsClient &client, QObject *parent);
-    virtual ~EwsGetStreamingEventsRequest();
+}
+EwsCreateAbchPersonJob::~EwsCreateAbchPersonJob()
+{
+}
 
-    void setTimeout(uint timeout) { mTimeout = timeout; };
+void EwsCreateAbchPersonJob::doStart()
+{
+    qCWarning(EWSRES_LOG) << QStringLiteral("Abch person item creation not implemented!");
+    emitResult();
+}
 
-    virtual void start() Q_DECL_OVERRIDE;
-public Q_SLOTS:
-    void eventsProcessed(const Response &response);
-Q_SIGNALS:
-    void eventsReceived(KJob *job);
-protected Q_SLOTS:
-    void requestData(KIO::Job *job, const QByteArray &data);
-    void requestDataTimeout();
-protected:
-    uint mTimeout;
-    QTimer mRespTimer;
-};
+bool EwsCreateAbchPersonJob::setSend(bool send)
+{
+    Q_UNUSED(send)
 
-#endif
+    qCWarning(EWSRES_LOG) << QStringLiteral("Sending abch person items is not supported!");
+    return false;
+}

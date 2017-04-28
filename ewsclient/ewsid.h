@@ -1,5 +1,5 @@
 /*  This file is part of Akonadi EWS Resource
-    Copyright (C) 2015-2016 Krzysztof Nowicki <krissn@op.pl>
+    Copyright (C) 2015-2017 Krzysztof Nowicki <krissn@op.pl>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -71,9 +71,11 @@ public:
     EwsId& operator=(const EwsId &other);
     EwsId& operator=(EwsId &&other);
     bool operator==(const EwsId &other) const;
+    bool operator<(const EwsId &other) const;
 
     void writeFolderIds(QXmlStreamWriter &writer) const;
     void writeItemIds(QXmlStreamWriter &writer) const;
+    void writeAttributes(QXmlStreamWriter &writer) const;
 
     friend QDebug operator<<(QDebug debug, const EwsId &id);
 #ifdef HAVE_INBOX_FILTERING_WORKAROUND
