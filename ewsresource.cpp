@@ -1418,7 +1418,7 @@ void EwsResource::globalTagsRetrievalFinished(KJob *job)
 
 void EwsResource::checkPasswordExpiration()
 {
-    EwsGetPasswordExpirationDateRequest *job = new EwsGetPasswordExpirationDateRequest(Settings::email(), mEwsClient, this);
+    EwsGetPasswordExpirationDateRequest *job = new EwsGetPasswordExpirationDateRequest(mSettings->email(), mEwsClient, this);
     connect(job, SIGNAL(result(KJob*)), SLOT(getPasswordExpirationRequestFinished(KJob*)));
     job->start();
 }
@@ -1441,16 +1441,16 @@ void EwsResource::getPasswordExpirationRequestFinished(KJob *job)
 
         if(daysUntilPasswordExpires > 1 && daysUntilPasswordExpires <= 7){
             const QString passwdExpireInDays = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire in <b>%2</b> days",
-                                                    Settings::email(),
+                                                    mSettings->email(),
                                                     daysUntilPasswordExpires);
             sendPasswordExpiringNotification(passwdExpireInDays);
         } else if (daysUntilPasswordExpires == 1) {
             const QString passwdExpireInOneDay = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire in <b>one</b> day",
-                                                      Settings::email());
+                                                      mSettings->email());
             sendPasswordExpiringNotification(passwdExpireInOneDay);
         } else if(daysUntilPasswordExpires == 0) {
             const QString passwdExpiresTodayAt = i18n("<h4>Consider changing your password</h4><i><b>%1</b></i> it will expire <b>today</b> at %2 UTC",
-                                                      Settings::email(),
+                                                      mSettings->email(),
                                                       req->getPasswordExpirationDate().time().toString(Qt::DefaultLocaleShortDate));
             sendPasswordExpiringNotification(passwdExpiresTodayAt);
         }
