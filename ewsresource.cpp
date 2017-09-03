@@ -17,7 +17,9 @@
     Boston, MA 02110-1301, USA.
 */
 
-#include <QtCore/QDebug>
+#include "ewsresource.h"
+
+#include <QDebug>
 
 #include <KI18n/KLocalizedString>
 #include <AkonadiCore/ChangeRecorder>
@@ -31,7 +33,6 @@
 #include <KWallet/KWallet>
 #include <KWidgetsAddons/KPasswordDialog>
 
-#include "ewsresource.h"
 #include "ewsfetchitemsjob.h"
 #include "ewsfetchfoldersjob.h"
 #include "ewsfetchfoldersincrjob.h"
@@ -253,7 +254,7 @@ void EwsResource::rootFolderFetchFinished(KJob *job)
         mRootCollection.setRemoteId(id.id());
         mRootCollection.setRemoteRevision(id.changeKey());
         qCDebug(EWSRES_LOG) << "Root folder is " << id;
-        Q_EMIT status(Idle, i18nc("@info:status", "Ready"));
+        Q_EMIT status(Idle, i18nc("@info:status Resource is ready", "Ready"));
 
         if (mSettings->serverSubscription()) {
             mSubManager.reset(new EwsSubscriptionManager(mEwsClient, id, mSettings.data(), this));
@@ -363,16 +364,20 @@ void EwsResource::retrieveItems(const Collection &collection)
 {
     Q_EMIT status(1, QStringLiteral("Retrieving item list"));
 
-    Q_EMIT status(Running, i18nc("@info:status", "Retrieving %1 items").arg(collection.name()));
+    Q_EMIT status(Running, i18nc("@info:status", "Retrieving %1 items", collection.name()));
 
     QString rid = collection.remoteId();
     EwsFetchItemsJob *job = new EwsFetchItemsJob(collection, mEwsClient,
         mSyncState.value(rid), mItemsToCheck.value(rid), mTagStore, this);
     job->setQueuedUpdates(mQueuedUpdates.value(collection.remoteId()));
     mQueuedUpdates.remove(collection.remoteId());
-    connect(job, SIGNAL(finished(KJob*)), SLOT(itemFetchJobFinished(KJob*)));
-    connect(job, SIGNAL(status(int,const QString&)), SIGNAL(status(int,const QString&)));
-    connect(job, SIGNAL(percent(int)), SIGNAL(percent(int)));
+    connect(job, &EwsFetchItemsJob::result, this, &EwsResource::itemFetchJobFinished);
+    connect(job, &EwsFetchItemsJob::status, this, [this](int s, const QString &message) {
+        status(s, message);
+    });
+    connect(job, &EwsFetchItemsJob::percent, this, [this](int p) {
+        percent(p);
+    });
     job->start();
 }
 
@@ -531,15 +536,16 @@ void EwsResource::reloadConfig()
 
 void EwsResource::configure(WId windowId)
 {
-    ConfigDialog dlg(this, mEwsClient, windowId);
-    if (dlg.exec()) {
+    QPointer<ConfigDialog> dlg = new ConfigDialog(this, mEwsClient, windowId);
+    if (dlg->exec()) {
         reloadConfig();
     }
+    delete dlg;
 }
 
 void EwsResource::fetchFoldersJobFinished(KJob *job)
 {
-    Q_EMIT status(Idle, i18nc("@info:status", "Ready"));
+    Q_EMIT status(Idle, i18nc("@info:status The resource is ready", "Ready"));
     EwsFetchFoldersJob *req = qobject_cast<EwsFetchFoldersJob*>(job);
     if (!req) {
         qCWarning(EWSRES_LOG) << QStringLiteral("Invalid EwsFetchFoldersJob job object");
@@ -562,7 +568,7 @@ void EwsResource::fetchFoldersJobFinished(KJob *job)
 
 void EwsResource::fetchFoldersIncrJobFinished(KJob *job)
 {
-    Q_EMIT status(Idle, i18nc("@info:status", "Ready"));
+    Q_EMIT status(Idle, i18nc("@info:status The resource is ready", "Ready"));
     EwsFetchFoldersIncrJob *req = qobject_cast<EwsFetchFoldersIncrJob*>(job);
     if (!req) {
         qCWarning(EWSRES_LOG) << QStringLiteral("Invalid EwsFetchFoldersIncrJob job object");
@@ -617,7 +623,7 @@ void EwsResource::itemFetchJobFinished(KJob *job)
     }
     saveState();
     mItemsToCheck.remove(fetchJob->collection().remoteId());
-    Q_EMIT status(Idle, i18nc("@info:status", "Ready"));
+    Q_EMIT status(Idle, i18nc("@info:status The resource is ready", "Ready"));
 }
 
 void EwsResource::itemChanged(const Akonadi::Item &item, const QSet<QByteArray> &partIdentifiers)
@@ -912,7 +918,7 @@ void EwsResource::collectionAdded(const Collection &collection, const Collection
     }
     else {
         qCWarningNC(EWSRES_LOG) << QStringLiteral("Cannot determine EWS folder type.");
-        cancelTask(i18n("Cannot determine EWS folder type."));
+        cancelTask(QStringLiteral("Cannot determine EWS folder type."));
         return;
     }
 
@@ -950,7 +956,7 @@ void EwsResource::folderCreateRequestFinished(KJob *job)
         changeCommitted(col);
     }
     else {
-        cancelTask(i18n("Failed to create folder"));
+        cancelTask(i18nc("@info:status", "Failed to create folder"));
     }
 }
 
@@ -998,7 +1004,7 @@ void EwsResource::folderMoveRequestFinished(KJob *job)
         changeCommitted(col);
     }
     else {
-        cancelTask(i18n("Failed to move folder"));
+        cancelTask(i18nc("@info:status", "Failed to move folder"));
     }
 }
 
@@ -1054,7 +1060,7 @@ void EwsResource::folderUpdateRequestFinished(KJob *job)
         changeCommitted(col);
     }
     else {
-        cancelTask(i18n("Failed to update folder"));
+        cancelTask(i18nc("@info:status", "Failed to update folder"));
     }
 }
 
@@ -1087,7 +1093,7 @@ void EwsResource::folderDeleteRequestFinished(KJob *job)
         changeProcessed();
     }
     else {
-        cancelTask(i18n("Failed to delete folder"));
+        cancelTask(i18nc("@info:status", "Failed to delete folder"));
         mFolderSyncState.clear();
         synchronizeCollectionTree();
     }
@@ -1248,7 +1254,7 @@ void EwsResource::specialFoldersCollectionsRetrieved(const Collection::List &fol
 
     if (!queryItems.isEmpty()) {
         EwsGetFolderRequest *req = new EwsGetFolderRequest(mEwsClient, this);
-        req->setFolderShape(EwsShapeIdOnly);
+        req->setFolderShape(EwsFolderShape(EwsShapeIdOnly));
         req->setFolderIds(queryItems);
         req->setProperty("collections", QVariant::fromValue<Collection::List>(folders));
         connect(req, &EwsGetFolderRequest::finished, this, &EwsResource::specialFoldersFetchFinished);
